@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:minHeight="48dp"
+    android:padding="30dp">
+
+    <!-- 配置字段的 EditText -->
+    <EditText
+        android:id="@+id/name"
+        android:layout_width="374dp"
+        android:layout_height="wrap_content"
+        android:hint="name"
+        android:inputType="text"
+        android:minHeight="48dp" />
+    <EditText
+        android:id="@+id/configUrl"
+        android:layout_width="374dp"
+        android:layout_height="wrap_content"
+        android:hint="请输入url"
+        android:inputType="text"
+        android:minHeight="48dp" />
+
+    <EditText
+        android:id="@+id/resolution"
+        android:layout_width="374dp"
+        android:layout_height="wrap_content"
+        android:hint="分辨率"
+        android:inputType="text"
+        android:minHeight="48dp" />
+    <RadioGroup
+        android:id="@+id/radioGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/VodButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="点播"/>
+        <RadioButton
+            android:id="@+id/LiveButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:layout_marginLeft="100dp"
+            android:text="直播"/>
+
+    </RadioGroup>
+
+    <!-- 取消按钮 -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="取消" />
+        <!-- 确定按钮 -->
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="150dp"
+            android:text="提交" />
+    </LinearLayout>
+
+</LinearLayout>

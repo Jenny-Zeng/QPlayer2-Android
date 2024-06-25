@@ -1,20 +1,30 @@
 package com.qiniu.qplayer2.ui.page.longvideo
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.Context
-import androidx.appcompat.app.AppCompatActivity
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
+import android.util.Log
+
+import android.view.View
 import android.view.WindowManager
+import android.widget.Button
+import android.widget.EditText
+import android.widget.RadioGroup
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.qiniu.qplayer2.R
-import com.qiniu.qplayer2ext.commonplayer.CommonPlayer
-import com.qiniu.qplayer2ext.commonplayer.CommonPlayerConfig
-import com.qiniu.qplayer2ext.commonplayer.data.DisplayOrientation
-import com.qiniu.qplayer2ext.commonplayer.data.CommonPlayerDataSource
-import com.qiniu.qplayer2ext.commonplayer.layer.control.ControlPanelConfig
-import com.qiniu.qplayer2ext.commonplayer.layer.control.ControlPanelConfigElement
-import com.qiniu.qplayer2ext.commonplayer.screen.ScreenType
 import com.qiniu.qplayer2.repository.setting.PlayerSettingRespostory
 import com.qiniu.qplayer2.ui.page.longvideo.service.buffering.PlayerBufferingServiceOwner
 import com.qiniu.qplayer2.ui.page.longvideo.service.controlpanelcontainervisible.PlayerControlPanelContainerVisibleServiceOwner
@@ -24,6 +34,25 @@ import com.qiniu.qplayer2.ui.page.longvideo.service.shoot.PlayerShootVideoServic
 import com.qiniu.qplayer2.ui.page.longvideo.service.subtitle.PlayerSubtitleServiceOwner
 import com.qiniu.qplayer2.ui.page.longvideo.service.toast.PlayerToastServiceOwner
 import com.qiniu.qplayer2.ui.page.longvideo.service.volume.PlayerVolumeServiceOwner
+import com.qiniu.qplayer2.ui.page.simplelongvideo.VideoListAdapter
+import com.qiniu.qplayer2ext.commonplayer.CommonPlayer
+import com.qiniu.qplayer2ext.commonplayer.CommonPlayerConfig
+import com.qiniu.qplayer2ext.commonplayer.data.CommonPlayerDataSource
+import com.qiniu.qplayer2ext.commonplayer.data.DisplayOrientation
+import com.qiniu.qplayer2ext.commonplayer.layer.control.ControlPanelConfig
+import com.qiniu.qplayer2ext.commonplayer.layer.control.ControlPanelConfigElement
+import com.qiniu.qplayer2ext.commonplayer.screen.ScreenType
+import com.uuzuche.lib_zxing.activity.CaptureActivity
+import com.uuzuche.lib_zxing.activity.CodeUtils
+import org.json.JSONObject
+import org.json.JSONArray
+import org.json.JSONException
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileOutputStream
+
+
+
 
 class LongVideoActivity : AppCompatActivity() {
 
@@ -33,6 +62,14 @@ class LongVideoActivity : AppCompatActivity() {
     private lateinit var mWakeLock: PowerManager.WakeLock
 
     private lateinit var mPlayerDataSource: CommonPlayerDataSource<LongPlayableParams, LongVideoParams>
+
+    private val REQUEST_CODE_SCAN = 1
+    private val CAMERA_PERMISSION_REQUEST_CODE = 100
+    private var selectedValue = 0
+    private val PERMISSION_REQUEST_CODE = 123
+    private var outnewEntry = JSONObject()
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
@@ -52,7 +89,7 @@ class LongVideoActivity : AppCompatActivity() {
     }
     @SuppressLint("InvalidWakeLockTag")
     private fun acquireWakeLock() {
-        val powerManager =getSystemService(Context.POWER_SERVICE) as PowerManager
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "keep_player_activate")
         mWakeLock.setReferenceCounted(false)
     }
@@ -62,7 +99,7 @@ class LongVideoActivity : AppCompatActivity() {
     }
 
     private fun initCommonPlayer() {
-        mPlayerDataSource = LongPlayerDataSourceFactory.create()
+        mPlayerDataSource = LongPlayerDataSourceFactory.create2()
         val config = CommonPlayerConfig.Builder<Any,
                 LongLogicProvider, LongPlayableParams, LongVideoParams>()
             .addControlPanel(
@@ -80,9 +117,16 @@ class LongVideoActivity : AppCompatActivity() {
                     )
                 )
             )
-            .addEnviroment(LongEnviromentType.LONG.type,
-                LongPlayerEnviroment())
-            .setCommonPlayerScreenChangedListener(LongCommonPlayerScreenChangedListener(this, findViewById(R.id.video_container_FL)))
+            .addEnviroment(
+                LongEnviromentType.LONG.type,
+                LongPlayerEnviroment()
+            )
+            .setCommonPlayerScreenChangedListener(
+                LongCommonPlayerScreenChangedListener(
+                    this,
+                    findViewById(R.id.video_container_FL)
+                )
+            )
             .setLogicProvider(LongLogicProvider(this))
             .setPlayerDataSource(mPlayerDataSource)
             .setContext(this)
@@ -112,8 +156,187 @@ class LongVideoActivity : AppCompatActivity() {
             .build()
 
         mCommonPlayer = CommonPlayer(config)
-        mPlayerDataSource.getVideoParamsList()[0]?.also {
+        mPlayerDataSource.getVideoParamsList().getOrNull(0)?.also {
             mCommonPlayer.playerVideoSwitcher.switchVideo(it.id)
         }
     }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            } else {
+                // 用户拒绝了摄像头权限
+                Toast.makeText(this, "we need the permission to get suspect", Toast.LENGTH_LONG)
+                    .show()
+            }
+        }
+        when (requestCode) {
+            PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.e("曾召侠", "权限申请成功")
+                    readAndWriteJsonFile(outnewEntry)
+                } else {
+                    Log.e("曾召侠", "权限申请失败")
+                }
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    fun onClickScanQRCode(view: View) {
+        //检查并请求摄像头权限
+        if (ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // 检查摄像头权限是否被授予
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.CAMERA),
+                CAMERA_PERMISSION_REQUEST_CODE
+            )
+        } else {
+            startActivityForResult(Intent(this, CaptureActivity::class.java), REQUEST_CODE_SCAN)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_SCAN && resultCode == CaptureActivity.RESULT_OK) {
+            // 处理扫描结果
+            if (data != null) {
+                var extras = data?.extras;
+                if (extras != null) {
+                    var scanResult = extras.getString(CodeUtils.RESULT_STRING);
+                    if (scanResult != null) {
+                        Log.i("曾召侠", "扫描结果scanResult${scanResult}")
+                    } else {
+                        Log.i("曾召侠", "扫描结果为空")
+                    }
+                    showConfigDialog(scanResult)
+                }
+            }
+        }
+    }
+
+    private fun showConfigDialog(scanResult: String?) {
+        var dialog = Dialog(this)
+        dialog.setContentView(R.layout.dialog_config)
+        dialog.setTitle("配置")
+        dialog.setCanceledOnTouchOutside(false)
+        val configUrl = dialog.findViewById<EditText>(R.id.configUrl)
+        val resolutionButton = dialog.findViewById<EditText>(R.id.resolution)
+        val UrlName = dialog.findViewById<EditText>(R.id.name)
+        val cancelButton = dialog.findViewById<Button>(R.id.cancelButton)
+        val submitButton = dialog.findViewById<Button>(R.id.submitButton)
+        val radioGroup = dialog.findViewById<RadioGroup>(R.id.radioGroup)
+        configUrl.setText(scanResult)
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            selectedValue = when (checkedId) {
+                R.id.VodButton -> 0
+                R.id.LiveButton -> 1
+                else -> -1 // 默认值或其他情况
+            }
+        }
+
+        submitButton.setOnClickListener {
+            //获取值
+            var inputText = resolutionButton.text.toString()
+
+            var inputName = UrlName.text.toString()
+
+            //创建json数组
+            val NewjsonArray = JSONArray()
+            //创建json对象
+            val newEntry = JSONObject()
+            newEntry.put("userType", "")
+            newEntry.put("urlType", 0)
+            newEntry.put("url", scanResult)
+            newEntry.put("quality", inputText)
+            newEntry.put("isSelected", 1)
+            newEntry.put("backupUrl", "")
+            newEntry.put("referer", "")
+            NewjsonArray.put(newEntry)
+
+            outnewEntry.put("isLive", selectedValue)
+            outnewEntry.put("name", inputName)
+            outnewEntry.put("streamElements", NewjsonArray)
+
+            readAndWriteJsonFile(outnewEntry)
+            dialog.dismiss()
+        }
+            cancelButton.setOnClickListener {
+                dialog.dismiss() //取消对话框
+            }
+            dialog.show()
+
+    }
+    fun readAndWriteJsonFile(outnewEntry: JSONObject) {
+        // 检查存储权限
+        if (ContextCompat.checkSelfPermission(baseContext, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.e("曾召侠", "存储权限已授予")
+            val inputS = baseContext.resources.openRawResource(R.raw.urls)
+            //val outputfile = File(baseContext.getExternalFilesDir(null),"urls01.json")
+            //val outputStream = FileOutputStream(outputfile)
+            // 写入文件
+            var folderPath = "/data/data/com.qiniu.qplayer2/files/url"
+            var fileName = "urls.json"
+            val filePath = "$folderPath/$fileName"
+            val folder = File(folderPath)
+            if (!folder.exists()) {
+                val created = folder.mkdirs()
+                if (created) {
+                    println("Folder created successfully.")
+                } else {
+                    println("Failed to create folder.")
+                }
+            } else {
+                println("Folder already exists.")
+            }
+            val outputFile = File(filePath)
+            val outputStream = FileOutputStream(outputFile)
+
+            try {
+                val buffer = ByteArray(1024)
+                var read: Int
+                while (inputS.read(buffer).also { read = it } != -1) {
+                    outputStream.write(buffer, 0, read)
+                }
+                println("File copied successfully.")
+            } catch (e: Exception) {
+                println("Error copying file: ${e.message}")
+            } finally {
+                outputStream.flush()
+                inputS.close()
+                outputStream.close()
+            }
+            val fileNew = File(filePath)
+            val jsonString = fileNew.readText()
+
+            try {
+                val jsonArrayNew = JSONArray(jsonString)
+                jsonArrayNew.put(outnewEntry)
+                val jsonArray_New = jsonArrayNew.toString()
+                val fileNew = File(filePath)
+                fileNew.writeText(jsonArray_New)
+            }catch (e:JSONException){
+                Log.e("曾召侠", "JSON内容解析错误: ${e.message}")
+            }
+        }else{
+            Log.e("曾召侠", "存储权限未授予，去获取权限")
+             ActivityCompat.requestPermissions(
+            this,arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), PERMISSION_REQUEST_CODE)
+        }
+    }
 }
+
+
+
