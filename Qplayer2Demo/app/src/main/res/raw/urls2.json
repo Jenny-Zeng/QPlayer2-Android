@@ -1,0 +1,17 @@
+[{
+
+    "isLive": 0,
+    "name": "宣传视频",
+    "streamElements": [
+        {
+            "userType": "",
+            "urlType": 0,
+            "url": "http://demo-videos.qnsdk.com/qiniu-2023-720p.mp4",
+            "quality": 720,
+            "isSelected": 0,
+            "backupUrl": "",
+            "referer": ""
+        }
+    ]
+}
+]

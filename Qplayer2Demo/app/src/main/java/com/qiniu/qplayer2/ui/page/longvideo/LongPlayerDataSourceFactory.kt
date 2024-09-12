@@ -34,7 +34,7 @@ object LongPlayerDataSourceFactory {
                 newEntry.put("streamElements",newjsonArray)
                 var newEntry2 = JSONObject()
                 newEntry2.put("userType", "")
-                newEntry2.put("urlType", 1)
+                newEntry2.put("urlType", 0)
                 newEntry2.put("url", "http://demo-videos.qnsdk.com/bbk-bt709.mp4")
                 newEntry2.put("quality", 1080)
                 newEntry2.put("isSelected", 1)
@@ -241,22 +241,24 @@ object LongPlayerDataSourceFactory {
         //音视频分开2个流的视频要用精准seek
         builder = QMediaModelBuilder()
         builder.addStreamElement(
-            "", QURLType.QAUDIO, 100,
-            "http://demo-videos.qnsdk.com/only-audio.m4s", true
+            "", QURLType.QAUDIO_AND_VIDEO, 100,
+            //"http://demo-videos.qnsdk.com/only-audio.m4s", true
+            "rtmp://pili-rtmp.qnsdk.com/sdk-live/hugowx1",true
         )
-        builder.addStreamElement(
-            "", QURLType.QVIDEO, 1080,
-            "http://demo-videos.qnsdk.com/only-video-1080p-60fps.m4s", true
-        )
+//        builder.addStreamElement(
+//            "", QURLType.QVIDEO, 1080,
+//            "http://demo-videos.qnsdk.com/only-video-1080p-60fps.m4s", true
+//        )
 
-        name = "2-点播-http-m4s-60fps-音视流分离"
+        //name = "2-点播-http-m4s-60fps-音视流分离"
+        name = "rtmp://pili-rtmp.qnsdk.com/sdk-live/hugowx1"
         videoParams = LongVideoParams(name, name.hashCode().toLong())
 
         dataSourceBuilder.addVideo(
             videoParams,
             arrayListOf(
                 LongPlayableParams(
-                    builder.build(false),
+                    builder.build(true),
                     LongControlPanelType.Normal.type,
                     DisplayOrientation.LANDSCAPE,
                     LongEnviromentType.LONG.type,

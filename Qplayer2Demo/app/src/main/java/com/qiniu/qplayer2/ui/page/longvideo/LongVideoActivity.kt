@@ -22,8 +22,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.qiniu.qplayer2.R
 import com.qiniu.qplayer2.repository.setting.PlayerSettingRespostory
 import com.qiniu.qplayer2.ui.page.longvideo.service.buffering.PlayerBufferingServiceOwner
@@ -34,7 +32,6 @@ import com.qiniu.qplayer2.ui.page.longvideo.service.shoot.PlayerShootVideoServic
 import com.qiniu.qplayer2.ui.page.longvideo.service.subtitle.PlayerSubtitleServiceOwner
 import com.qiniu.qplayer2.ui.page.longvideo.service.toast.PlayerToastServiceOwner
 import com.qiniu.qplayer2.ui.page.longvideo.service.volume.PlayerVolumeServiceOwner
-import com.qiniu.qplayer2.ui.page.simplelongvideo.VideoListAdapter
 import com.qiniu.qplayer2ext.commonplayer.CommonPlayer
 import com.qiniu.qplayer2ext.commonplayer.CommonPlayerConfig
 import com.qiniu.qplayer2ext.commonplayer.data.CommonPlayerDataSource
@@ -47,11 +44,9 @@ import com.uuzuche.lib_zxing.activity.CodeUtils
 import org.json.JSONObject
 import org.json.JSONArray
 import org.json.JSONException
-import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
-
-
+import java.io.FileWriter
 
 
 class LongVideoActivity : AppCompatActivity() {
@@ -247,9 +242,16 @@ class LongVideoActivity : AppCompatActivity() {
 
         submitButton.setOnClickListener {
             //获取值
-            var inputText = resolutionButton.text.toString()
+            var inputText = resolutionButton.text.toString().toIntOrNull()?:720
 
-            var inputName = UrlName.text.toString()
+            //val textValue = UrlName?.text
+            //val inputName = textValue ?: "test"
+            //var inputName = UrlName.text ?:"test"
+            val inputName = if(UrlName.text.isNullOrBlank()){
+                "test"
+            }else{
+                UrlName.text
+            }
 
             //创建json数组
             val NewjsonArray = JSONArray()
@@ -282,7 +284,7 @@ class LongVideoActivity : AppCompatActivity() {
         if (ContextCompat.checkSelfPermission(baseContext, Manifest.permission.WRITE_EXTERNAL_STORAGE)
             == PackageManager.PERMISSION_GRANTED
         ) {
-            Log.e("曾召侠", "存储权限已授予")
+            Log.e("曾召侠", "存储权限已授予,开始写文件")
             val inputS = baseContext.resources.openRawResource(R.raw.urls)
             //val outputfile = File(baseContext.getExternalFilesDir(null),"urls01.json")
             //val outputStream = FileOutputStream(outputfile)
@@ -291,26 +293,49 @@ class LongVideoActivity : AppCompatActivity() {
             var fileName = "urls.json"
             val filePath = "$folderPath/$fileName"
             val folder = File(folderPath)
+            //val outputFile = File(filePath)
+            //val outputStream = FileOutputStream(filePath)
             if (!folder.exists()) {
                 val created = folder.mkdirs()
                 if (created) {
+                    Log.i("曾召侠", "Folder not exist.and create")
                     println("Folder created successfully.")
                 } else {
                     println("Failed to create folder.")
                 }
+
+//                val buffer = ByteArray(1024)
+//                var read: Int
+//                while (inputS.read(buffer).also { read = it } != -1) {
+//                    outputStream.write(buffer, 0, read)
+//                }
             } else {
+                Log.i("曾召侠", "Folder already exists")
                 println("Folder already exists.")
             }
             val outputFile = File(filePath)
             val outputStream = FileOutputStream(outputFile)
+            //var inputStream: FileInputStream? = null
+            Log.i("曾召侠", "开始写")
+
 
             try {
+                //inputStream = FileInputStream(filePath)
                 val buffer = ByteArray(1024)
                 var read: Int
                 while (inputS.read(buffer).also { read = it } != -1) {
                     outputStream.write(buffer, 0, read)
                 }
                 println("File copied successfully.")
+                //打印copy后的文件内容
+                //val copiedContent = outputStream.toString()
+                //println("Copied file content: $copiedContent")
+
+                //打印此时文件中的内容
+                val file = File(filePath)
+                val fileContent = file.readText()
+                println(fileContent)
+
             } catch (e: Exception) {
                 println("Error copying file: ${e.message}")
             } finally {
@@ -318,15 +343,30 @@ class LongVideoActivity : AppCompatActivity() {
                 inputS.close()
                 outputStream.close()
             }
+            // 读取现有的
             val fileNew = File(filePath)
             val jsonString = fileNew.readText()
 
             try {
+
                 val jsonArrayNew = JSONArray(jsonString)
                 jsonArrayNew.put(outnewEntry)
+
+
                 val jsonArray_New = jsonArrayNew.toString()
+                //val jsonArray_New1 = "$jsonArray_New\n$jsonString"
+
                 val fileNew = File(filePath)
+                val fileWriter = FileWriter(fileNew)
+                fileWriter.write(jsonArray_New)
+
+                //读取
+                val fileContent = fileNew.readText()
+                println(fileContent)
+
+
                 fileNew.writeText(jsonArray_New)
+                //FileWriter(filePath).use {it.write(jsonArray_New1)}
             }catch (e:JSONException){
                 Log.e("曾召侠", "JSON内容解析错误: ${e.message}")
             }
@@ -337,6 +377,8 @@ class LongVideoActivity : AppCompatActivity() {
         }
     }
 }
+
+
 
 
 
