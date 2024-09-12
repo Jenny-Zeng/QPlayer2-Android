@@ -13,6 +13,7 @@ import com.qiniu.qplayer2.R
 import com.qiniu.qplayer2.ui.page.longvideo.LongVideoParams
 import com.qiniu.qplayer2ext.common.measure.DpUtils
 
+
 class VideoListAdapter(context: Context, private var mVideoParamsList: List<LongVideoParams>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val mLayoutInflater: LayoutInflater?
 
@@ -33,8 +34,8 @@ class VideoListAdapter(context: Context, private var mVideoParamsList: List<Long
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         (holder as ViewHolder).bind(getItem(position), mSelectedVideoId)
-    }
 
+    }
     override fun getItemCount(): Int {
         return mVideoParamsList.size
 
@@ -102,4 +103,5 @@ class VideoListAdapter(context: Context, private var mVideoParamsList: List<Long
     interface OnItemClickListener {
         fun onItemClick(id: Long)
     }
+
 }
